@@ -17,5 +17,11 @@ edf.o: pasta $(pasta_s)/edf.c
 pasta:
 	mkdir -p $(pasta_o)
 
+test_rate: rate
+	./rate rate_test.txt
+
+test_edf: edf
+	./edf edf_test.txt
+
 clean:
 	rm -rf *$(pasta_o).o $(pasta_o) rate edf
