@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "rate.h"
+#include "atividade.h"
 
 void criar_arquivo_saida(char tipo) {
     if (tipo == 'e') {

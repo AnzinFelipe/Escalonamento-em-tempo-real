@@ -2,7 +2,7 @@
 #define SAIDA
 
 #include <stdio.h>
-#include "rate.h"
+#include "atividade.h"
 
 void criar_arquivo_saida(char tipo);
 

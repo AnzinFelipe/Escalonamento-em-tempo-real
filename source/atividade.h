@@ -1,5 +1,5 @@
-#ifndef RATE
-#define RATE
+#ifndef ATIVIDADE
+#define ATIVIDADE
 #include <time.h>
 
 typedef struct Atividade {
@@ -21,6 +21,8 @@ void adicionar_atividade(Atividade **head, char nome[100], double periodo, doubl
 
 void printar_atividades(Atividade *head);
 
-void executando_atividades(char tipo, float tempo_total, Atividade **head);
+void executando_atividades_edf(char tipo, float tempo_total, Atividade **head);
+
+void executando_atividades_rate(char tipo, float tempo_total, Atividade **head);
 
 #endif
