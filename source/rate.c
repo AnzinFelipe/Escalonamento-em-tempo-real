@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include "saida.h"
 
 typedef struct Atividade {
     char nome[100];
@@ -18,14 +19,16 @@ typedef struct Atividade {
 
 void adicionar_atividade(Atividade **head, char nome[100], double periodo, double burst);
 void printar_atividades(Atividade *head);
-void executando_atividades(float tempo_total, Atividade **head);
+void executando_atividades(char tipo, float tempo_total, Atividade **head);
 
 int main (int argc, char *argv[]) {
+    char tipo = 'r';
     FILE *arquivo = fopen(argv[1], "r");
     if (arquivo == NULL) {
         printf("[ERRO] Arquivo não encontrado\n");
         exit(1);
     }
+    criar_arquivo_saida(tipo);
 
     Atividade *atividade = NULL;
     char nome[100];
@@ -43,7 +46,7 @@ int main (int argc, char *argv[]) {
             adicionar_atividade(&atividade, nome, periodo, burst);
         }
     }
-    executando_atividades(tempo_total, &atividade);
+    executando_atividades(tipo, tempo_total, &atividade);
     //printf("Atividades na lista encadeada:\n");
     //printar_atividades(atividade);
     
@@ -82,7 +85,7 @@ void printar_atividades(Atividade *head) {
     }
 }
 
-void executando_atividades(float tempo_total, Atividade **head) {
+void executando_atividades(char tipo, float tempo_total, Atividade **head) {
     time_t tempo_inicio = time(NULL);
     Atividade *menor_burst;
     Atividade *burst_ant = NULL;
@@ -127,6 +130,7 @@ void executando_atividades(float tempo_total, Atividade **head) {
                 }
                 printf("A tarefa %s não finalizou, falta: %1.lf\n", burst_atual->nome, burst_atual->burst_restante);
                 //Função para escrever que ant foi interrompida
+                tarefa_interrompida(tipo, burst_atual->burst - burst_atual->burst_restante, burst_atual->nome);
             }
             
             if(menor_burst != NULL) {
@@ -149,6 +153,7 @@ void executando_atividades(float tempo_total, Atividade **head) {
             if (difftime(time(NULL), menor_burst->burst_executado) >= menor_burst->burst_restante) {
                 printf("Tarefa: %s acabou\n", menor_burst->nome);
                 //Função pra escrever q acabou
+                tarefa_finalizada(tipo, menor_burst->burst_restante, menor_burst->nome);
                 menor_burst->acabou = 1;
                 menor_burst->burst_executado = time(NULL);
                 burst_ant = menor_burst;

@@ -2,17 +2,20 @@ pasta_o = objects
 
 pasta_s = source
 
-rate: rate.o
-	gcc $(pasta_o)/rate.o -o rate
+rate: rate.o saida.o
+	gcc $(pasta_o)/rate.o $(pasta_o)/saida.o -o rate
 
-edf: edf.o
-	gcc $(pasta_o)/edf.o -o edf
+edf: edf.o saida.o
+	gcc $(pasta_o)/edf.o $(pasta_o)/saida.o -o edf
 
-rate.o: pasta $(pasta_s)/rate.c
+rate.o: pasta $(pasta_s)/rate.c $(pasta_s)/saida.h
 	gcc -c $(pasta_s)/rate.c -o $(pasta_o)/rate.o
 
-edf.o: pasta $(pasta_s)/edf.c
+edf.o: pasta $(pasta_s)/edf.c $(pasta_s)/saida.h
 	gcc -c $(pasta_s)/edf.c -o $(pasta_o)/edf.o
+
+saida.o: pasta $(pasta_s)/saida.c
+	gcc -c $(pasta_s)/saida.c -o $(pasta_o)/saida.o
 
 pasta:
 	mkdir -p $(pasta_o)
