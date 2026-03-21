@@ -8,13 +8,13 @@ rate: rate.o saida.o
 edf: edf.o saida.o
 	gcc $(pasta_o)/edf.o $(pasta_o)/saida.o -o edf
 
-rate.o: pasta $(pasta_s)/rate.c $(pasta_s)/saida.h
+rate.o: pasta $(pasta_s)/rate.c $(pasta_s)/saida.h $(pasta_s)/rate.h
 	gcc -c $(pasta_s)/rate.c -o $(pasta_o)/rate.o
 
 edf.o: pasta $(pasta_s)/edf.c $(pasta_s)/saida.h
 	gcc -c $(pasta_s)/edf.c -o $(pasta_o)/edf.o
 
-saida.o: pasta $(pasta_s)/saida.c
+saida.o: pasta $(pasta_s)/saida.c $(pasta_s)/rate.h
 	gcc -c $(pasta_s)/saida.c -o $(pasta_o)/saida.o
 
 pasta:

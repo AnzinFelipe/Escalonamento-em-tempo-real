@@ -4,22 +4,7 @@
 #include <time.h>
 #include <unistd.h>
 #include "saida.h"
-
-typedef struct Atividade {
-    char nome[100];
-    double periodo;
-    double burst;
-    double burst_restante;
-    time_t tempo_executado;
-    time_t burst_executado;
-    int acabou;
-    int iniciar_burst;
-    struct Atividade *prox;
-} Atividade;
-
-void adicionar_atividade(Atividade **head, char nome[100], double periodo, double burst);
-void printar_atividades(Atividade *head);
-void executando_atividades(char tipo, float tempo_total, Atividade **head);
+#include "rate.h"
 
 int main (int argc, char *argv[]) {
     char tipo = 'r';
@@ -49,6 +34,9 @@ int main (int argc, char *argv[]) {
     executando_atividades(tipo, tempo_total, &atividade);
     //printf("Atividades na lista encadeada:\n");
     //printar_atividades(atividade);
+    valores_tarefa_deadline(tipo, atividade);
+    valores_tarefa_finalizada(tipo, atividade);
+    valores_tarefa_morta(tipo, atividade);
     
     fclose(arquivo);
 
@@ -65,6 +53,9 @@ void adicionar_atividade(Atividade **head, char nome[100], double periodo, doubl
         novo->tempo_executado = time(NULL) - periodo;
         novo->acabou = 1;
         novo->iniciar_burst = 0;
+        novo->atingiu_deadline = 0;
+        novo->finalizou = 0;
+        novo->morta = 0;
         novo->prox = NULL;
         if (*head == NULL) {
             *head = novo;
@@ -87,9 +78,10 @@ void printar_atividades(Atividade *head) {
 
 void executando_atividades(char tipo, float tempo_total, Atividade **head) {
     time_t tempo_inicio = time(NULL);
+    time_t idle_executado = time(NULL);
     Atividade *menor_burst;
-    Atividade *burst_ant = NULL;
     Atividade *burst_atual = NULL;
+    int idle_atual = 0;
 
     while(difftime(time(NULL), tempo_inicio) < tempo_total) {
 
@@ -98,6 +90,13 @@ void executando_atividades(char tipo, float tempo_total, Atividade **head) {
 
         while (aux != NULL) {
             if (difftime(time(NULL), aux->tempo_executado) >= aux->periodo) {
+                if (burst_atual == aux && burst_atual->acabou == 0) {
+                    //Função para escrever que atingiu o deadline
+                    double valor_executado = difftime(time(NULL), burst_atual->burst_executado);
+                    deadline_atingida(tipo, valor_executado, burst_atual->nome);
+                    burst_atual->atingiu_deadline++;
+                    burst_atual->morta++;
+                }
                 aux->acabou = 0;
                 printf("Tarefa: %s foi iniciada\n", aux->nome);
                 aux->tempo_executado = time(NULL);
@@ -120,9 +119,14 @@ void executando_atividades(char tipo, float tempo_total, Atividade **head) {
         }
 
         if(burst_atual != menor_burst) {
-            if (burst_atual == NULL) {
+            
+            if (burst_atual == NULL && idle_atual == 1) {
                 //Saiu do idle
-            } else if(burst_atual->acabou == 0) {
+                double valor_executado = difftime(time(NULL), idle_executado);
+                if (valor_executado > 0) {
+                    idle(tipo, valor_executado);
+                }
+            } else if(burst_atual != NULL && burst_atual->acabou == 0) {
                 double valor_executado = difftime(time(NULL), burst_atual->burst_executado);
                 burst_atual->burst_restante = burst_atual->burst - valor_executado;
                 if(burst_atual->burst_restante < 0) {
@@ -132,10 +136,14 @@ void executando_atividades(char tipo, float tempo_total, Atividade **head) {
                 //Função para escrever que ant foi interrompida
                 tarefa_interrompida(tipo, burst_atual->burst - burst_atual->burst_restante, burst_atual->nome);
             }
-            
+
             if(menor_burst != NULL) {
                 menor_burst->burst_executado = time(NULL);
                 menor_burst->iniciar_burst = 0;
+                idle_atual = 0;
+            } else {
+                idle_atual = 1;
+                idle_executado = time(NULL);
             }
 
             burst_atual = menor_burst;
@@ -143,7 +151,8 @@ void executando_atividades(char tipo, float tempo_total, Atividade **head) {
 
         if (menor_burst == NULL) {
             //Nenhuma tarefa
-            burst_ant = NULL;
+            idle_atual = 1;
+            burst_atual = NULL;
         } else {
             //Tarefa atual
             if (menor_burst->iniciar_burst == 1) {
@@ -154,11 +163,24 @@ void executando_atividades(char tipo, float tempo_total, Atividade **head) {
                 printf("Tarefa: %s acabou\n", menor_burst->nome);
                 //Função pra escrever q acabou
                 tarefa_finalizada(tipo, menor_burst->burst_restante, menor_burst->nome);
+                menor_burst->finalizou++;
                 menor_burst->acabou = 1;
                 menor_burst->burst_executado = time(NULL);
-                burst_ant = menor_burst;
                 burst_atual = NULL;
+                idle_atual = 1;
+                idle_executado = time(NULL);
             }
+        }
+    }
+    if (burst_atual != NULL && burst_atual->acabou == 0) {
+        //Função para escrever que interrompeu pelo tempo
+        double valor_executado = difftime(time(NULL), burst_atual->burst_executado);
+        tempo_acabou(tipo, valor_executado, burst_atual->nome);
+        burst_atual->morta++;
+    } else if (burst_atual == NULL && idle_atual == 1) {
+        double valor_executado = difftime(time(NULL), idle_executado);
+        if (valor_executado > 0) {
+            idle(tipo, valor_executado);
         }
     }
 }
