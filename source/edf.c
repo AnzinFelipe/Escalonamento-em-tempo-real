@@ -6,6 +6,12 @@
 #include "atividade.h"
 
 int main (int argc, char *argv[]) {
+
+    if (argc > 2) {
+        printf("[ERRO] Número incorreto de argumentos\n");
+        exit(1);
+    }
+
     char tipo = 'e';
     FILE *arquivo = fopen(argv[1], "r");
     if (arquivo == NULL) {
@@ -20,19 +26,24 @@ int main (int argc, char *argv[]) {
     int i = 0;
     while (1) {
         if (i == 0) {
-            fscanf(arquivo, "%lf", &tempo_total);
-            printf("%1.lf\n", tempo_total);
+            if (fscanf(arquivo, "%lf", &tempo_total) == 0) {
+                printf("[ERRO] conteúdo dentro do arquivo inválido\n");
+                exit(1);
+            }
+            printf("%lf\n", tempo_total);
             i++;
         } else if (i == 1) {
-            if (fscanf(arquivo, "%s %lf %lf", nome, &periodo, &burst) == EOF) {
+            int variaveis_corretas = fscanf(arquivo, "%s %lf %lf", nome, &periodo, &burst);
+            if (variaveis_corretas == EOF) {
                 break;
+            } else if (variaveis_corretas != 3) {
+                printf("[ERRO] conteúdo dentro do arquivo inválido\n");
+                exit(1);
             }
             adicionar_atividade(&atividade, nome, periodo, burst);
         }
     }
     executando_atividades_edf(tipo, tempo_total, &atividade);
-    //printf("Atividades na lista encadeada:\n");
-    //printar_atividades(atividade);
     valores_tarefa_deadline(tipo, atividade);
     valores_tarefa_finalizada(tipo, atividade);
     valores_tarefa_morta(tipo, atividade);
