@@ -38,6 +38,15 @@ void printar_atividades(Atividade *head) {
     }
 }
 
+void liberar_atividades(Atividade *head) {
+    Atividade *aux;
+    while(head != NULL) {
+        aux = head;
+        head = head->prox;
+        free(aux);
+    }
+}
+
 void executando_atividades_edf(char tipo, float tempo_total, Atividade **head) {
     time_t tempo_inicio = time(NULL);
     time_t idle_executado = time(NULL);

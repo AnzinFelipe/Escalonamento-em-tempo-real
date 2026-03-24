@@ -21,6 +21,8 @@ void adicionar_atividade(Atividade **head, char nome[100], double periodo, doubl
 
 void printar_atividades(Atividade *head);
 
+void liberar_atividades(Atividade *head);
+
 void executando_atividades_edf(char tipo, float tempo_total, Atividade **head);
 
 void executando_atividades_rate(char tipo, float tempo_total, Atividade **head);

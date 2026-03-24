@@ -47,6 +47,7 @@ int main (int argc, char *argv[]) {
     valores_tarefa_deadline(tipo, atividade);
     valores_tarefa_finalizada(tipo, atividade);
     valores_tarefa_morta(tipo, atividade);
+    liberar_atividades(atividade);
     
     fclose(arquivo);
 
