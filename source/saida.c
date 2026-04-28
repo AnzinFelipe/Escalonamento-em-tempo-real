@@ -16,62 +16,62 @@ void criar_arquivo_saida(char tipo) {
     }
 }
 
-void tarefa_finalizada(char tipo, double tempo, char nome[100]) {
+void tarefa_finalizada(char tipo, int tempo, char nome[100]) {
     if (tipo == 'e') {
         FILE *arquivo = fopen("edf_ifcvd.out", "a");
-        fprintf(arquivo, "[%s] for %1.lf units - F\n", nome, tempo);
+        fprintf(arquivo, "[%s] for %d units - F\n", nome, tempo);
         fclose(arquivo);
     } else if (tipo == 'r') {
         FILE *arquivo = fopen("rate_ifcvd.out", "a");
-        fprintf(arquivo, "[%s] for %1.lf units - F\n", nome, tempo);
+        fprintf(arquivo, "[%s] for %d units - F\n", nome, tempo);
         fclose(arquivo);
     }
 }
 
-void tarefa_interrompida(char tipo, double tempo, char nome[100]) {
+void tarefa_interrompida(char tipo, int tempo, char nome[100]) {
     if (tipo == 'e') {
         FILE *arquivo = fopen("edf_ifcvd.out", "a");
-        fprintf(arquivo, "[%s] for %1.lf units - H\n", nome, tempo);
+        fprintf(arquivo, "[%s] for %d units - H\n", nome, tempo);
         fclose(arquivo);
     } else if (tipo == 'r') {
         FILE *arquivo = fopen("rate_ifcvd.out", "a");
-        fprintf(arquivo, "[%s] for %1.lf units - H\n", nome, tempo);
+        fprintf(arquivo, "[%s] for %d units - H\n", nome, tempo);
         fclose(arquivo);
     }
 }
 
-void deadline_atingida(char tipo, double tempo, char nome[100]) {
+void deadline_atingida(char tipo, int tempo, char nome[100]) {
     if (tipo == 'e') {
         FILE *arquivo = fopen("edf_ifcvd.out", "a");
-        fprintf(arquivo, "[%s] for %1.lf units - L\n", nome, tempo);
+        fprintf(arquivo, "[%s] for %d units - L\n", nome, tempo);
         fclose(arquivo);
     } else if (tipo == 'r') {
         FILE *arquivo = fopen("rate_ifcvd.out", "a");
-        fprintf(arquivo, "[%s] for %1.lf units - L\n", nome, tempo);
+        fprintf(arquivo, "[%s] for %d units - L\n", nome, tempo);
         fclose(arquivo);
     }
 }
 
-void tempo_acabou(char tipo, double tempo, char nome[100]) {
+void tempo_acabou(char tipo, int tempo, char nome[100]) {
     if (tipo == 'e') {
         FILE *arquivo = fopen("edf_ifcvd.out", "a");
-        fprintf(arquivo, "[%s] for %1.lf units - K\n", nome, tempo);
+        fprintf(arquivo, "[%s] for %d units - K\n", nome, tempo);
         fclose(arquivo);
     } else if (tipo == 'r') {
         FILE *arquivo = fopen("rate_ifcvd.out", "a");
-        fprintf(arquivo, "[%s] for %1.lf units - K\n", nome, tempo);
+        fprintf(arquivo, "[%s] for %d units - K\n", nome, tempo);
         fclose(arquivo);
     }
 }
 
-void idle(char tipo, double tempo) {
+void idle(char tipo, int tempo) {
     if (tipo == 'e') {
         FILE *arquivo = fopen("edf_ifcvd.out", "a");
-        fprintf(arquivo, "idle for %1.lf units\n", tempo);
+        fprintf(arquivo, "idle for %d units\n", tempo);
         fclose(arquivo);
     } else if (tipo == 'r') {
         FILE *arquivo = fopen("rate_ifcvd.out", "a");
-        fprintf(arquivo, "idle for %1.lf units\n", tempo);
+        fprintf(arquivo, "idle for %d units\n", tempo);
         fclose(arquivo);
     }
 }

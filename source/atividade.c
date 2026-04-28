@@ -5,14 +5,14 @@
 #include <time.h>
 #include "saida.h"
 
-void adicionar_atividade(Atividade **head, char nome[100], double periodo, double burst) {
+void adicionar_atividade(Atividade **head, char nome[100], int periodo, int burst) {
     Atividade *novo = (Atividade *)malloc(sizeof(Atividade));
     if (novo != NULL) {
         strcpy(novo->nome, nome);
         novo->periodo = periodo;
         novo->burst = burst;
         novo->burst_restante = burst;
-        novo->tempo_executado = time(NULL) - periodo;
+        novo->tempo_executado = -periodo;
         novo->acabou = 1;
         novo->iniciar_burst = 0;
         novo->atingiu_deadline = 0;
@@ -33,7 +33,7 @@ void adicionar_atividade(Atividade **head, char nome[100], double periodo, doubl
 
 void printar_atividades(Atividade *head) {
     while(head != NULL) {
-        printf("%s %1.lf %1.lf\n", head->nome, head->periodo, head->burst);
+        printf("%s %d %d\n", head->nome, head->periodo, head->burst);
         head = head->prox;
     }
 }
@@ -48,28 +48,27 @@ void liberar_atividades(Atividade *head) {
 }
 
 void executando_atividades_edf(char tipo, float tempo_total, Atividade **head) {
-    time_t tempo_inicio = time(NULL);
-    time_t idle_executado = time(NULL);
+    int tick;
+    int idle_executado = 0;
     Atividade *menor_deadline;
     Atividade *burst_atual = NULL;
     int idle_atual = 0;
 
-    while(difftime(time(NULL), tempo_inicio) < tempo_total) {
+    for (tick = 0; tick < tempo_total; tick++) {
 
         Atividade *aux = *head;
         menor_deadline = NULL;
 
         while (aux != NULL) {
-            if (difftime(time(NULL), aux->tempo_executado) >= aux->periodo) {
+            if ((tick - aux->tempo_executado) >= aux->periodo) {
                 if (burst_atual == aux && burst_atual->acabou == 0) {
-                    double valor_executado = difftime(time(NULL), burst_atual->burst_executado);
+                    int valor_executado = tick - burst_atual->burst_executado;
                     deadline_atingida(tipo, valor_executado, burst_atual->nome);
                     burst_atual->atingiu_deadline++;
                     burst_atual->morta++;
                 }
                 aux->acabou = 0;
-                printf("Tarefa: %s foi iniciada\n", aux->nome);
-                aux->tempo_executado = time(NULL);
+                aux->tempo_executado = tick;
                 aux->iniciar_burst = 1;
                 aux->burst_restante = aux->burst;
             }
@@ -79,7 +78,7 @@ void executando_atividades_edf(char tipo, float tempo_total, Atividade **head) {
             }
             if (menor_deadline != NULL) {
                 if (aux->acabou == 0) {
-                    if (aux->periodo < menor_deadline->periodo) {
+                    if (aux->tempo_executado + aux->periodo < (menor_deadline->tempo_executado + menor_deadline->periodo)) {
                         menor_deadline = aux;
                     }
                 }
@@ -91,27 +90,26 @@ void executando_atividades_edf(char tipo, float tempo_total, Atividade **head) {
         if(burst_atual != menor_deadline) {
             
             if (burst_atual == NULL && idle_atual == 1) {
-                double valor_executado = difftime(time(NULL), idle_executado);
+                int valor_executado = tick - idle_executado;
                 if (valor_executado > 0) {
                     idle(tipo, valor_executado);
                 }
             } else if(burst_atual != NULL && burst_atual->acabou == 0) {
-                double valor_executado = difftime(time(NULL), burst_atual->burst_executado);
+                int valor_executado = tick - burst_atual->burst_executado;
                 burst_atual->burst_restante = burst_atual->burst - valor_executado;
                 if(burst_atual->burst_restante < 0) {
                     burst_atual->burst_restante = 0;
                 }
-                printf("A tarefa %s não finalizou, falta: %1.lf\n", burst_atual->nome, burst_atual->burst_restante);
                 tarefa_interrompida(tipo, burst_atual->burst - burst_atual->burst_restante, burst_atual->nome);
             }
 
             if(menor_deadline != NULL) {
-                menor_deadline->burst_executado = time(NULL);
+                menor_deadline->burst_executado = tick;
                 menor_deadline->iniciar_burst = 0;
                 idle_atual = 0;
             } else {
                 idle_atual = 1;
-                idle_executado = time(NULL);
+                idle_executado = tick;
             }
 
             burst_atual = menor_deadline;
@@ -122,27 +120,28 @@ void executando_atividades_edf(char tipo, float tempo_total, Atividade **head) {
             burst_atual = NULL;
         } else {
             if (menor_deadline->iniciar_burst == 1) {
-                menor_deadline->burst_executado = time(NULL);
+                menor_deadline->burst_executado = tick;
                 menor_deadline->iniciar_burst = 0;
             }
-            if (difftime(time(NULL), menor_deadline->burst_executado) >= menor_deadline->burst_restante) {
-                printf("Tarefa: %s acabou\n", menor_deadline->nome);
+            if ((tick - menor_deadline->burst_executado) >= menor_deadline->burst_restante) {
                 tarefa_finalizada(tipo, menor_deadline->burst_restante, menor_deadline->nome);
                 menor_deadline->finalizou++;
                 menor_deadline->acabou = 1;
-                menor_deadline->burst_executado = time(NULL);
+                menor_deadline->burst_executado = tick;
                 burst_atual = NULL;
                 idle_atual = 1;
-                idle_executado = time(NULL);
+                idle_executado = tick;
+                tick--;
+                continue;
             }
         }
     }
     if (burst_atual != NULL && burst_atual->acabou == 0) {
-        double valor_executado = difftime(time(NULL), burst_atual->burst_executado);
+        int valor_executado = tick - burst_atual->burst_executado;
         tempo_acabou(tipo, valor_executado, burst_atual->nome);
         burst_atual->morta++;
     } else if (burst_atual == NULL && idle_atual == 1) {
-        double valor_executado = difftime(time(NULL), idle_executado);
+        int valor_executado = tick - idle_executado;
         if (valor_executado > 0) {
             idle(tipo, valor_executado);
         }
@@ -150,39 +149,38 @@ void executando_atividades_edf(char tipo, float tempo_total, Atividade **head) {
 }
 
 void executando_atividades_rate(char tipo, float tempo_total, Atividade **head) {
-    time_t tempo_inicio = time(NULL);
-    time_t idle_executado = time(NULL);
-    Atividade *menor_burst;
-    Atividade *burst_atual = NULL;
+    int tick;
+    int idle_executado = 0;
+    Atividade *menor_periodo;
+    Atividade *periodo_atual = NULL;
     int idle_atual = 0;
 
-    while(difftime(time(NULL), tempo_inicio) < tempo_total) {
+    for (tick = 0; tick < tempo_total; tick++) {
 
         Atividade *aux = *head;
-        menor_burst = NULL;
+        menor_periodo = NULL;
 
         while (aux != NULL) {
-            if (difftime(time(NULL), aux->tempo_executado) >= aux->periodo) {
-                if (burst_atual == aux && burst_atual->acabou == 0) {
-                    double valor_executado = difftime(time(NULL), burst_atual->burst_executado);
-                    deadline_atingida(tipo, valor_executado, burst_atual->nome);
-                    burst_atual->atingiu_deadline++;
-                    burst_atual->morta++;
+            if ((tick - aux->tempo_executado) >= aux->periodo) {
+                if (periodo_atual == aux && periodo_atual->acabou == 0) {
+                    int valor_executado = tick - periodo_atual->burst_executado;
+                    deadline_atingida(tipo, valor_executado, periodo_atual->nome);
+                    periodo_atual->atingiu_deadline++;
+                    periodo_atual->morta++;
                 }
                 aux->acabou = 0;
-                printf("Tarefa: %s foi iniciada\n", aux->nome);
-                aux->tempo_executado = time(NULL);
+                aux->tempo_executado = tick;
                 aux->iniciar_burst = 1;
                 aux->burst_restante = aux->burst;
             }
 
-            if (menor_burst == NULL && aux->acabou == 0) {
-                menor_burst = aux;
+            if (menor_periodo == NULL && aux->acabou == 0) {
+                menor_periodo = aux;
             }
-            if (menor_burst != NULL) {
+            if (menor_periodo != NULL ) {
                 if (aux->acabou == 0) {
-                    if (aux->burst < menor_burst->burst) {
-                        menor_burst = aux;
+                    if (aux->periodo < menor_periodo->periodo) {
+                        menor_periodo = aux;
                     }
                 }
             }
@@ -190,61 +188,61 @@ void executando_atividades_rate(char tipo, float tempo_total, Atividade **head) 
             aux = aux->prox;
         }
 
-        if(burst_atual != menor_burst) {
+        if(periodo_atual != menor_periodo) {
             
-            if (burst_atual == NULL && idle_atual == 1) {
-                double valor_executado = difftime(time(NULL), idle_executado);
+            if (periodo_atual == NULL && idle_atual == 1) {
+                int valor_executado = tick - idle_executado;
                 if (valor_executado > 0) {
                     idle(tipo, valor_executado);
                 }
-            } else if(burst_atual != NULL && burst_atual->acabou == 0) {
-                double valor_executado = difftime(time(NULL), burst_atual->burst_executado);
-                burst_atual->burst_restante = burst_atual->burst - valor_executado;
-                if(burst_atual->burst_restante < 0) {
-                    burst_atual->burst_restante = 0;
+            } else if(periodo_atual != NULL && periodo_atual->acabou == 0) {
+                int valor_executado = tick - periodo_atual->burst_executado;
+                periodo_atual->burst_restante = periodo_atual->burst - valor_executado;
+                if(periodo_atual->burst_restante < 0) {
+                    periodo_atual->burst_restante = 0;
                 }
-                printf("A tarefa %s não finalizou, falta: %1.lf\n", burst_atual->nome, burst_atual->burst_restante);
-                tarefa_interrompida(tipo, burst_atual->burst - burst_atual->burst_restante, burst_atual->nome);
+                tarefa_interrompida(tipo, periodo_atual->burst - periodo_atual->burst_restante, periodo_atual->nome);
             }
 
-            if(menor_burst != NULL) {
-                menor_burst->burst_executado = time(NULL);
-                menor_burst->iniciar_burst = 0;
+            if(menor_periodo != NULL) {
+                menor_periodo->burst_executado = tick;
+                menor_periodo->iniciar_burst = 0;
                 idle_atual = 0;
             } else {
                 idle_atual = 1;
-                idle_executado = time(NULL);
+                idle_executado = tick;
             }
 
-            burst_atual = menor_burst;
+            periodo_atual = menor_periodo;
         }
 
-        if (menor_burst == NULL) {
+        if (menor_periodo == NULL) {
             idle_atual = 1;
-            burst_atual = NULL;
+            periodo_atual = NULL;
         } else {
-            if (menor_burst->iniciar_burst == 1) {
-                menor_burst->burst_executado = time(NULL);
-                menor_burst->iniciar_burst = 0;
+            if (menor_periodo->iniciar_burst == 1) {
+                menor_periodo->burst_executado = tick;
+                menor_periodo->iniciar_burst = 0;
             }
-            if (difftime(time(NULL), menor_burst->burst_executado) >= menor_burst->burst_restante) {
-                printf("Tarefa: %s acabou\n", menor_burst->nome);
-                tarefa_finalizada(tipo, menor_burst->burst_restante, menor_burst->nome);
-                menor_burst->finalizou++;
-                menor_burst->acabou = 1;
-                menor_burst->burst_executado = time(NULL);
-                burst_atual = NULL;
-                idle_atual = 1;
-                idle_executado = time(NULL);
+            if ((tick - menor_periodo->burst_executado) >= menor_periodo->burst_restante) {
+                tarefa_finalizada(tipo, menor_periodo->burst_restante, menor_periodo->nome);
+                menor_periodo->finalizou++;
+                menor_periodo->acabou = 1;
+                menor_periodo->burst_executado = tick;
+                periodo_atual = NULL;
+                idle_atual = 0;
+                idle_executado = tick;
+                tick--;
+                continue;
             }
         }
     }
-    if (burst_atual != NULL && burst_atual->acabou == 0) {
-        double valor_executado = difftime(time(NULL), burst_atual->burst_executado);
-        tempo_acabou(tipo, valor_executado, burst_atual->nome);
-        burst_atual->morta++;
-    } else if (burst_atual == NULL && idle_atual == 1) {
-        double valor_executado = difftime(time(NULL), idle_executado);
+    if (periodo_atual != NULL && periodo_atual->acabou == 0) {
+        int valor_executado = tick - periodo_atual->burst_executado;
+        tempo_acabou(tipo, valor_executado, periodo_atual->nome);
+        periodo_atual->morta++;
+    } else if (periodo_atual == NULL && idle_atual == 1) {
+        int valor_executado = tick - idle_executado;
         if (valor_executado > 0) {
             idle(tipo, valor_executado);
         }

@@ -4,11 +4,11 @@
 
 typedef struct Atividade {
     char nome[100];
-    double periodo;
-    double burst;
-    double burst_restante;
-    time_t tempo_executado;
-    time_t burst_executado;
+    int periodo;
+    int burst;
+    int burst_restante;
+    int tempo_executado;
+    int burst_executado;
     int acabou;
     int iniciar_burst;
     int atingiu_deadline;
@@ -17,7 +17,7 @@ typedef struct Atividade {
     struct Atividade *prox;
 } Atividade;
 
-void adicionar_atividade(Atividade **head, char nome[100], double periodo, double burst);
+void adicionar_atividade(Atividade **head, char nome[100], int periodo, int burst);
 
 void printar_atividades(Atividade *head);
 

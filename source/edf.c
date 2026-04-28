@@ -30,7 +30,6 @@ int main (int argc, char *argv[]) {
                 printf("[ERRO] conteúdo dentro do arquivo inválido\n");
                 exit(1);
             }
-            printf("%lf\n", tempo_total);
             i++;
         } else if (i == 1) {
             int variaveis_corretas = fscanf(arquivo, "%s %lf %lf", nome, &periodo, &burst);
